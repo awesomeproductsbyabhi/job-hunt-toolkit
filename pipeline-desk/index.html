@@ -1,0 +1,283 @@
+<title>Pipeline Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: headline tiles, then Today beside stage counts, then the full filterable pipeline table with inline editing. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --ink:#18212b; --muted:#5b6876; --line:#d9dfe5;
+  --accent:#0b6b64; --accent-ink:#ffffff; --accent-soft:#dcefed; --accent2:#3b6fb0;
+  --warn:#9a5b00; --warn-soft:#fbeed6; --bad:#a3302b; --bad-soft:#f8e0de; --ok:#2c6e3b; --ok-soft:#dff0e1;
+  --sample:#3f4a9a; --sample-soft:#e4e7f8; --mutedbar:#b8c1ca;
+  --font-display:'Fraunces',Georgia,serif; --font-body:'IBM Plex Sans',system-ui,sans-serif; --font-data:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10161c; --panel:#18212a; --ink:#e7ecf1; --muted:#97a4b1; --line:#2b3641;
+  --accent:#4fc3b8; --accent-ink:#06211f; --accent-soft:#16332f; --accent2:#7fa8dd;
+  --warn:#f0b35a; --warn-soft:#3a2b10; --bad:#f08a84; --bad-soft:#3d1c1a; --ok:#7cc88b; --ok-soft:#183122;
+  --sample:#aab3f2; --sample-soft:#222850; --mutedbar:#46525e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161c; --panel:#18212a; --ink:#e7ecf1; --muted:#97a4b1; --line:#2b3641;
+  --accent:#4fc3b8; --accent-ink:#06211f; --accent-soft:#16332f; --accent2:#7fa8dd;
+  --warn:#f0b35a; --warn-soft:#3a2b10; --bad:#f08a84; --bad-soft:#3d1c1a; --ok:#7cc88b; --ok-soft:#183122;
+  --sample:#aab3f2; --sample-soft:#222850; --mutedbar:#46525e; color-scheme:dark}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px}
+h1{font-family:var(--font-display);font-weight:600;font-size:30px;line-height:1.1;margin:0;text-wrap:balance}
+.take{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.badge{font-family:var(--font-data);font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:var(--sample-soft);color:var(--sample);padding:4px 8px;border-radius:4px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:4px}
+.tile.due{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.tile .lab{color:var(--muted);font-size:12px;line-height:1.3}
+.tile .num{font-family:var(--font-data);font-weight:500;font-size:28px;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+h2{font-size:15px;margin:0 0 2px;font-weight:600}
+.note{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+.wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+#pipeline{min-width:980px}#today{min-width:480px}
+th{text-align:left;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{all:unset;cursor:pointer;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit}
+th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+th[aria-sort] button::after{content:attr(data-arrow);margin-left:4px}
+td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+tr:last-child>td{border-bottom:0}
+.co{font-weight:600}
+.chip{font-family:var(--font-data);font-size:12px;padding:2px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
+.chip.late{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.chip.A{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:500}
+.stages{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:8.5rem 1fr 2rem;align-items:center;gap:8px;font-size:13px}
+.srow .bar{height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
+.srow .bar i{display:block;height:100%;border-radius:5px}
+.srow .n{font-family:var(--font-data);text-align:right}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.tools input,.tools select,.edgrid input,.edgrid select,.edgrid textarea,td select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+.tools input{flex:1 1 220px}
+td select{padding:3px 6px;font-size:13px;max-width:150px}
+.b{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 11px}
+.b.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.b.sm{padding:3px 9px;font-size:12px}
+.b:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.msg{min-height:1.2em;margin:0 0 6px;font-size:12.5px;color:var(--ok)}
+.edgrid,.addp{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 10px;padding:6px 0}
+.addp{padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+label{display:flex;flex-direction:column;gap:3px;color:var(--muted);font-size:12px}
+label.wide{grid-column:1/-1}
+textarea{min-height:60px;resize:vertical}
+.acts{display:flex;gap:8px;grid-column:1/-1}
+tr.ed>td{background:var(--bg)}
+a{color:var(--accent2)}
+.prep{font-family:var(--font-data);font-size:12px}
+.prep.no{color:var(--muted)}
+.prepbox{padding:8px 4px;color:var(--muted);font-size:12.5px;columns:2 220px}
+.prepbox b{color:var(--ink)}
+.empty{color:var(--muted);padding:8px 0}
+.foot{color:var(--muted);font-size:12px;max-width:90ch}
+.notes{max-width:240px;color:var(--muted)}
+@media (max-width:620px){.hide-narrow{display:none}}
+</style>
+
+<div class="page">
+  <header>
+    <div>
+      <h1>Job Search Pipeline</h1>
+      <p class="take" id="takeaway">—</p>
+    </div>
+    <span class="badge">Sample data · fictional companies</span>
+  </header>
+
+  <section class="tiles" aria-label="Headline numbers">
+    <div class="tile due"><span class="lab">Follow-ups and actions due today</span><span class="num" id="k-due">—</span></div>
+    <div class="tile"><span class="lab">New leads to review</span><span class="num" id="k-new">—</span></div>
+    <div class="tile"><span class="lab">Applied, last 7 days</span><span class="num" id="k-7d">—</span></div>
+    <div class="tile"><span class="lab">Active applications</span><span class="num" id="k-active">—</span></div>
+    <div class="tile"><span class="lab">In interviews</span><span class="num" id="k-iv">—</span></div>
+    <div class="tile"><span class="lab">Companies to verify</span><span class="num" id="k-ver">—</span></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Today</h2>
+      <p class="note">Everything with a next step due today or earlier, oldest first.</p>
+      <div class="wrap" style="max-height:20rem">
+        <table id="today"><thead><tr><th>Company</th><th>Next step</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody></tbody></table>
+        <p class="empty" id="today-empty" hidden>Nothing due today.</p>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Where everything stands</h2>
+      <p class="note">Number of companies and roles at each stage.</p>
+      <div class="stages" id="stages"></div>
+    </section>
+  </div>
+
+  <section class="card" id="pipeline-card">
+    <h2>All companies and roles</h2>
+    <p class="note">Change a stage from its dropdown, or press Edit for dates, link, pay and notes. Tier A is a priority target; "Move needed" flags roles that need relocation. Try changing a stage: the next step and due date reset by rule.</p>
+    <div class="tools">
+      <input id="q" type="search" placeholder="Search company, role or notes" aria-label="Search">
+      <select id="fstage" aria-label="Stage"></select>
+      <select id="fcity" aria-label="Location"></select>
+      <button class="b pri" id="addbtn" type="button">Add a role</button>
+      <button class="b" id="reset" type="button">Reset sample data</button>
+    </div>
+    <div class="addp" id="addp" hidden></div>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    <div class="wrap">
+      <table id="pipeline">
+        <thead><tr>
+          <th><button data-sort="company">Company</button></th>
+          <th><button data-sort="role">Role</button></th>
+          <th><button data-sort="location">Location</button></th>
+          <th><button data-sort="tier">Tier</button></th>
+          <th><button data-sort="stage">Stage</button></th>
+          <th><button data-sort="next_date">Next step due</button></th>
+          <th class="hide-narrow"><button data-sort="relocation">Move needed</button></th>
+          <th class="hide-narrow"><button data-sort="pay">Pay listed</button></th>
+          <th class="hide-narrow">Posting</th>
+          <th class="hide-narrow">Interview prep</th>
+          <th class="hide-narrow">Notes</th>
+          <th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">Stage rules: Applied sets a follow-up 7 days out, Referral asked 3 days, Recruiter screen, Interviewing and Offer 2 days; Rejected and Parked clear the next step. Tier A roles get a full interview prep doc when they are applied to, linked here. All names, roles, pay and notes on this page are made up and kept in your browser only. Built with AI coding assistance as a tool for my own daily job search.</p>
+</div>
+
+<script>
+(function(){
+  var STAGES=['New lead','To verify','Applied','Referral asked','Recruiter screen','Interviewing','Offer','Rejected','Parked'];
+  var ACTIVE=['Applied','Referral asked','Recruiter screen','Interviewing','Offer'];
+  var AFTER={'Applied':[7,'Follow up: nudge the recruiter or a referral contact'],'Referral asked':[3,'Check for the referral reply'],
+    'Recruiter screen':[2,'Prepare for the screen and confirm the time'],'Interviewing':[2,'Prepare for the next round; send a thank-you'],
+    'Offer':[2,'Review the offer and negotiate'],'Rejected':[null,''],'Parked':[null,'']};
+  var CITIES=['Hyderabad','Bengaluru','Remote','Other'];
+  var KEY='pipeline-desk-sample-v2';
+  var PREP=['Roles and what each really hires for','Company snapshot','Two-minute introduction and story table','Questions and answers on the core domain','Deep dives on each story with follow-ups','Leadership and behavioural questions','Tough gap questions','Product-case framework','Numbers cheat sheet','Logistics answers','Questions to ask and round notes'];
+  function todayIST(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'})}
+  function addDays(s,n){var d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+  function T(n){return addDays(todayIST(),n)}
+  function sample(){return [
+    {key:'brightloop',company:'Brightloop',role:'Senior Product Manager, AI Assistants',location:'Hyderabad',city:'Hyderabad',tier:'A',stage:'Interviewing',applied:T(-9),next_date:T(1),next_action:'Prepare for the next round; send a thank-you',relocation:'No',pay:'',link:'https://example.com/jobs/brightloop-1',prep:true,notes:'Round 2 with the director. Panel includes a data science lead.'},
+    {key:'kestrel',company:'Kestrel Pay',role:'Lead Product Manager, Payments Platform',location:'Bengaluru',city:'Bengaluru',tier:'A',stage:'Applied',applied:T(-2),next_date:T(5),next_action:'Follow up: nudge the recruiter or a referral contact',relocation:'Yes',pay:'Not listed',link:'https://example.com/jobs/kestrel-2',prep:true,notes:'Referral asked from an alum, no reply yet.'},
+    {key:'ardent',company:'Ardent Cloud',role:'Product Manager, Workflow Automation',location:'Hyderabad',city:'Hyderabad',tier:'B',stage:'Referral asked',applied:'',next_date:T(-1),next_action:'Check for the referral reply',relocation:'No',pay:'',link:'https://example.com/jobs/ardent-3',prep:false,notes:'Two alumni found; messaged one.'},
+    {key:'lumen',company:'Lumen Grid',role:'Senior PM, Marketplace Growth',location:'Remote',city:'Remote',tier:'B',stage:'Applied',applied:T(-7),next_date:T(0),next_action:'Follow up: nudge the recruiter or a referral contact',relocation:'No',pay:'',link:'https://example.com/jobs/lumen-4',prep:false,notes:'Applied via company site.'},
+    {key:'oakline',company:'Oakline Health',role:'Principal PM, Clinical Data Tools',location:'Hyderabad',city:'Hyderabad',tier:'A',stage:'New lead',applied:'',next_date:T(0),next_action:'Review the posting and decide',relocation:'No',pay:'',link:'https://example.com/jobs/oakline-5',prep:false,notes:'Strong match on AI and data work.'},
+    {key:'tidewell',company:'Tidewell Systems',role:'Product Manager, Internal Platforms',location:'Remote',city:'Remote',tier:'C',stage:'Parked',applied:'',next_date:'',next_action:'',relocation:'No',pay:'',link:'https://example.com/jobs/tidewell-6',prep:false,notes:'Parked: scope is mostly infrastructure.'},
+    {key:'quillon',company:'Quillon AI',role:'Senior PM, Evaluation Tooling',location:'Bengaluru',city:'Bengaluru',tier:'B',stage:'Recruiter screen',applied:T(-5),next_date:T(2),next_action:'Prepare for the screen and confirm the time',relocation:'Yes',pay:'',link:'https://example.com/jobs/quillon-7',prep:false,notes:'Screen booked. Asks about RAG, which is a gap.'},
+    {key:'harbor',company:'Harborview Retail',role:'Group PM, Growth and Pricing',location:'Hyderabad',city:'Hyderabad',tier:'B',stage:'To verify',applied:'',next_date:T(0),next_action:'Confirm the role is still open',relocation:'No',pay:'',link:'https://example.com/jobs/harbor-8',prep:false,notes:'Posting may be stale; check the company site.'},
+    {key:'sundial',company:'Sundial Energy',role:'Senior PM, Customer Experience',location:'Hyderabad',city:'Hyderabad',tier:'B',stage:'New lead',applied:'',next_date:T(0),next_action:'Review the posting and decide',relocation:'No',pay:'',link:'https://example.com/jobs/sundial-9',prep:false,notes:''},
+    {key:'meridian',company:'Meridian Bank',role:'Senior Manager, Digital Products',location:'Other',city:'Other',tier:'C',stage:'Applied',applied:T(-8),next_date:T(-1),next_action:'Follow up: nudge the recruiter or a referral contact',relocation:'Yes',pay:'',link:'https://example.com/jobs/meridian-10',prep:false,notes:'Relocation needed. No reply yet.'},
+    {key:'cobalt',company:'Cobalt Logistics',role:'Product Manager, Automation',location:'Remote',city:'Remote',tier:'B',stage:'Rejected',applied:T(-14),next_date:'',next_action:'',relocation:'No',pay:'',link:'https://example.com/jobs/cobalt-11',prep:false,notes:'Rejected after screen; wanted deeper supply-chain background.'},
+    {key:'verity',company:'Verity Learning',role:'Lead PM, AI Tutoring',location:'Bengaluru',city:'Bengaluru',tier:'A',stage:'Offer',applied:T(-21),next_date:T(2),next_action:'Review the offer and negotiate',relocation:'Yes',pay:'Range shared by recruiter',link:'https://example.com/jobs/verity-12',prep:true,notes:'Verbal offer; written offer expected.'}
+  ]}
+  var rows,canOpen=null,sortKey='next_date',sortDir=1,msgTimer=0;
+  function load(){try{var s=localStorage.getItem(KEY);if(s){var v=JSON.parse(s);if(Array.isArray(v)&&v.length)return v}}catch(e){}return sample()}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(rows))}catch(e){}}
+  rows=load();
+  var $=function(id){return document.getElementById(id)};
+  function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+  function opt(sel,vals,cur){vals.forEach(function(v){var o=document.createElement('option');o.textContent=v;o.value=v;if(v===cur)o.selected=true;sel.appendChild(o)})}
+  var q=$('q'),fs=$('fstage'),fc=$('fcity'),openKey=null,prepKey=null;
+  var o1=document.createElement('option');o1.value='';o1.textContent='All stages';fs.appendChild(o1);opt(fs,STAGES);
+  var o2=document.createElement('option');o2.value='';o2.textContent='All locations';fc.appendChild(o2);opt(fc,CITIES);
+  [q,fs,fc].forEach(function(e){e.addEventListener(e===q?'input':'change',draw)});
+  document.querySelectorAll('#pipeline th button').forEach(function(b){b.addEventListener('click',function(){
+    var k=b.dataset.sort;if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=1}
+    document.querySelectorAll('#pipeline th').forEach(function(th){th.removeAttribute('aria-sort');var bb=th.querySelector('button');if(bb)bb.removeAttribute('data-arrow')});
+    b.parentElement.setAttribute('aria-sort',sortDir===1?'ascending':'descending');b.setAttribute('data-arrow',sortDir===1?'↑':'↓');draw()})});
+  function msg(t){var m=$('msg');m.textContent=t;clearTimeout(msgTimer);msgTimer=setTimeout(function(){m.textContent=''},3500)}
+  function isOpen(r){return ['Rejected','Parked','Offer'].indexOf(r.stage)<0}
+  function applyStage(r,stage){
+    r.stage=stage;var t=todayIST(),a=AFTER[stage];
+    if(stage==='Applied'&&!r.applied)r.applied=t;
+    if(stage==='Applied'&&r.tier==='A'&&!r.prep)r.prep=true;
+    if(a){r.next_date=a[0]==null?'':addDays(t,a[0]);r.next_action=a[1]}
+  }
+  function changeStage(r,stage){if(stage===r.stage)return;applyStage(r,stage);save();msg('Saved. '+r.company+' is now '+stage+'.');draw()}
+  function field(label,input,wide){var l=el('label',wide?'wide':'');l.append(label,input);return l}
+  function inp(type,val,ph){var i=document.createElement('input');i.type=type;i.value=val||'';if(ph)i.placeholder=ph;return i}
+  function sel(vals,cur){var s=document.createElement('select');opt(s,vals,cur);return s}
+  function editorRow(r){
+    var tr=el('tr','ed'),td=el('td');td.colSpan=12;tr.appendChild(td);var g=el('div','edgrid');td.appendChild(g);
+    var role=inp('text',r.role),nd=inp('date',r.next_date),na=inp('text',r.next_action),ap=inp('date',r.applied),lk=inp('url',r.link,'https://'),pay=inp('text',r.pay),pu=inp('text',r.prep?'Linked (sample)':'','Paste the prep doc link');
+    var tier=sel(['A','B','C'],r.tier),mv=sel(['No','Yes'],r.relocation||'No');var notes=document.createElement('textarea');notes.value=r.notes||'';
+    g.append(field('Role',role),field('Next step',na,true),field('Next step due',nd),field('Applied on',ap),field('Posting link',lk),field('Interview prep link',pu),field('Pay listed',pay),field('Tier',tier),field('Move needed',mv),field('Notes',notes,true));
+    var acts=el('div','acts');
+    var sv=el('button','b pri','Save');sv.type='button';sv.addEventListener('click',function(){
+      r.role=role.value.trim();r.next_action=na.value.trim();r.next_date=nd.value;r.applied=ap.value;r.link=lk.value.trim();r.pay=pay.value.trim();r.tier=tier.value;r.relocation=mv.value;r.notes=notes.value.trim();r.prep=pu.value.trim()!=='';
+      save();openKey=null;msg('Saved.');draw()});
+    var cn=el('button','b','Close');cn.type='button';cn.addEventListener('click',function(){openKey=null;draw()});
+    acts.append(sv,cn);g.appendChild(acts);return tr}
+  function buildAdd(){
+    var p=$('addp');p.replaceChildren();
+    var co=inp('text','','Company'),ro=inp('text','','Role title'),lo=inp('text','','City or region'),ci=sel(CITIES,'Hyderabad'),ti=sel(['A','B','C'],'B'),st=sel(['New lead','To verify','Applied'],'New lead'),lk=inp('url','','https://');
+    p.append(field('Company',co),field('Role',ro),field('Location label',lo),field('Region',ci),field('Tier',ti),field('Stage',st),field('Posting link',lk));
+    var acts=el('div','acts');var ad=el('button','b pri','Add');ad.type='button';ad.addEventListener('click',function(){
+      var c=co.value.trim(),r=ro.value.trim();if(!c||!r){msg('Company and role are required.');return}
+      var row={key:'n'+Date.now(),company:c,role:r,location:lo.value.trim()||ci.value,city:ci.value,tier:ti.value,stage:'New lead',applied:'',next_date:T(0),next_action:'Review the posting and decide',relocation:ci.value==='Other'||ci.value==='Bengaluru'?'Yes':'No',pay:'',link:lk.value.trim(),prep:false,notes:''};
+      applyStage(row,st.value);rows.push(row);save();p.hidden=true;msg('Added '+c+'.');draw()});
+    var cn=el('button','b','Cancel');cn.type='button';cn.addEventListener('click',function(){p.hidden=true});acts.append(ad,cn);p.appendChild(acts)}
+  $('addbtn').addEventListener('click',function(){var p=$('addp');if(p.hidden)buildAdd();p.hidden=!p.hidden});
+  $('reset').addEventListener('click',function(){rows=sample();save();openKey=null;msg('Sample data restored.');draw()});
+  function cell(tr,text,cls){var td=el('td',cls,text==null?'':String(text));tr.appendChild(td);return td}
+  function draw(){
+    var t=todayIST(),wk=addDays(t,-7);
+    var due=rows.filter(function(r){return isOpen(r)&&r.next_date&&r.next_date<=t});
+    var set=function(id,v){$(id).textContent=String(v)};
+    set('k-due',due.length);set('k-new',rows.filter(function(r){return r.stage==='New lead'}).length);
+    set('k-7d',rows.filter(function(r){return r.applied&&r.applied>=wk}).length);
+    set('k-active',rows.filter(function(r){return ACTIVE.indexOf(r.stage)>-1}).length);
+    set('k-iv',rows.filter(function(r){return r.stage==='Recruiter screen'||r.stage==='Interviewing'}).length);
+    set('k-ver',rows.filter(function(r){return r.stage==='To verify'}).length);
+    $('takeaway').textContent=due.length?due.length+' item'+(due.length===1?'':'s')+' need'+(due.length===1?'s':'')+' action today; start with Tier A.':'Nothing due today; review new leads and send outreach.';
+    var box=$('stages');box.replaceChildren();
+    var counts=STAGES.map(function(s){return rows.filter(function(r){return r.stage===s}).length}),max=Math.max.apply(null,[1].concat(counts));
+    STAGES.forEach(function(s,i){var row=el('div','srow'),bar=el('div','bar'),fill=document.createElement('i');
+      fill.style.width=(counts[i]/max*100)+'%';fill.style.background=(s==='Rejected'||s==='Parked')?'var(--mutedbar)':(i<2?'var(--accent2)':'var(--accent)');
+      bar.appendChild(fill);row.append(el('span','',s),bar,el('span','n',counts[i]));box.appendChild(row)});
+    var tb=document.querySelector('#today tbody');tb.replaceChildren();
+    due.sort(function(a,b){return a.next_date<b.next_date?-1:a.next_date>b.next_date?1:((a.tier||'')<(b.tier||'')?-1:1)}).forEach(function(r){
+      var tr=document.createElement('tr');cell(tr,r.company,'co');cell(tr,r.next_action);
+      var d=cell(tr,'');d.appendChild(el('span','chip'+(r.next_date<t?' late':''),r.next_date));cell(tr,r.stage);
+      var a=cell(tr,'');var b=el('button','b sm','Update');b.type='button';b.addEventListener('click',function(){
+        openKey=r.key;fs.value='';fc.value='';q.value='';draw();var row=document.querySelector('#pipeline tbody tr[data-key="'+r.key+'"]');(row||$('pipeline-card')).scrollIntoView({block:'center'})});a.appendChild(b);tb.appendChild(tr)});
+    $('today-empty').hidden=due.length>0;
+    var pb=document.querySelector('#pipeline tbody');pb.replaceChildren();
+    var text=q.value.trim().toLowerCase();
+    var list=rows.filter(function(r){return(!fs.value||r.stage===fs.value)&&(!fc.value||r.city===fc.value)&&(!text||[r.company,r.role,r.notes,r.location].join(' ').toLowerCase().indexOf(text)>-1)});
+    var sk=function(r){return(r[sortKey]==null||r[sortKey]==='')?'￿':String(r[sortKey])};
+    list.sort(function(a,b){return sk(a)<sk(b)?-sortDir:sk(a)>sk(b)?sortDir:0});
+    list.forEach(function(r){
+      var tr=document.createElement('tr');tr.dataset.key=r.key;
+      cell(tr,r.company,'co');cell(tr,r.role);cell(tr,r.location);
+      cell(tr,'').appendChild(el('span','chip '+(r.tier||''),r.tier));
+      var sc=cell(tr,'');var s=sel(STAGES,r.stage);s.setAttribute('aria-label','Stage for '+r.company);s.addEventListener('change',function(){changeStage(r,s.value)});sc.appendChild(s);
+      var dc=cell(tr,'');if(r.next_date)dc.appendChild(el('span','chip'+(r.next_date<t&&isOpen(r)?' late':''),r.next_date));else dc.textContent='';
+      cell(tr,r.relocation,'hide-narrow');cell(tr,r.pay,'hide-narrow');
+      var lc=cell(tr,'','hide-narrow');if(r.link&&/^https:\/\//.test(r.link)){var a=document.createElement('a');a.href=r.link;a.target='_blank';a.rel='noopener';a.textContent='Open';lc.appendChild(a)}
+      var pc=cell(tr,'','hide-narrow');
+      if(r.prep){var pa=el('button','b sm prep','Open prep');pa.type='button';pa.addEventListener('click',function(){prepKey=prepKey===r.key?null:r.key;draw()});pc.appendChild(pa)}else{pc.appendChild(el('span','prep no','Not created'))}
+      cell(tr,r.notes,'hide-narrow notes');
+      var ec=cell(tr,'');var eb=el('button','b sm',openKey===r.key?'Close':'Edit');eb.type='button';eb.addEventListener('click',function(){openKey=openKey===r.key?null:r.key;draw()});ec.appendChild(eb);
+      pb.appendChild(tr);
+      if(prepKey===r.key){var pr=el('tr','ed'),pd=el('td');pd.colSpan=12;var bx=el('div','prepbox');
+        var h=el('b','','Sample prep doc outline: ');bx.appendChild(h);bx.appendChild(document.createTextNode(PREP.map(function(x,i){return (i+1)+'. '+x}).join('  ·  ')));pd.appendChild(bx);pr.appendChild(pd);pb.appendChild(pr)}
+      if(openKey===r.key)pb.appendChild(editorRow(r));
+    });
+    if(!list.length){var tr2=document.createElement('tr'),td2=el('td','empty','No roles match.');td2.colSpan=12;tr2.appendChild(td2);pb.appendChild(tr2)}
+  }
+  draw();
+})();
+</script>
