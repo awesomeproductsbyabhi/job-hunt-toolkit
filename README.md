@@ -1,12 +1,13 @@
 # Job Hunt Toolkit
 
-Small tools I built to run my own job search quickly and honestly, written with an AI coding assistant (Claude) and used every day. Three parts:
+Small tools I built to run my own job search quickly and honestly, written with an AI coding assistant (Claude) and used every day. Four parts:
 
 | Part | What it does |
 | --- | --- |
 | [`resume-builder/`](resume-builder) | Builds a one-page, ATS-friendly resume PDF per job from a small overrides file. Fails the build if the result is not exactly one page. |
 | [`skills/tailor-resume-to-jd/`](skills/tailor-resume-to-jd/SKILL.md) | The agent skill that drives the process: read the JD, score fit before and after, count keyword coverage, tailor only with true claims, draft outreach. |
 | [`pipeline-desk/`](pipeline-desk/index.html) | A single-file job-pipeline dashboard: headline tiles (due today, new leads, applied this week, active, interviews, to verify), a Today list, stage counts, and a sortable, searchable table with inline editing and a linked interview-prep column. Changing a stage sets the next step and due date automatically. Sample data only. |
+| [`skills/interview-*`](skills) and [`playbook/`](playbook/INTERVIEW_PLAYBOOK.md) | Three agent skills (kickoff, mock interview, debrief) and a template playbook for interview prep: intel, scoring rubric, debrief template and a learnings log. Generic: bring your own stories. |
 
 ## Why
 

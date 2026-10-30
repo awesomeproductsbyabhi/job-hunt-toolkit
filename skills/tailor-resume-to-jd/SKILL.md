@@ -27,3 +27,5 @@ Applications are manual only. Never submit anything on the user's behalf.
 - Plans are not results: label a modelled number as a plan.
 - Do not name private partners or customers on a resume.
 - Do not link or describe an employer's private tools as personal work.
+- Keep the Impact line in the Portal PDF light: its own line with a little space and a thin accent bar, no boxes, icons or extra colour, so it is easy to find without becoming the only thing an interviewer asks about.
+- Always build from the current content and layout files in the project, never from an older output file; keep earlier versions.

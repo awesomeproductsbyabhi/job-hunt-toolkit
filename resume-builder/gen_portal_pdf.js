@@ -6,7 +6,7 @@ const bold = t => esc(t).split('**').map((x, i) => i % 2 ? `<b>${x}</b>` : x).jo
 const V = D.version;
 const impact = V.impact.map(x => `${x[0]} ${x[1]}`).join(' | ');
 let h = `<h1>${esc(D.person.name)}</h1><div class="t">${esc(V.title)} | ${esc(V.band.replace(/ · /g, ' | '))}</div><div class="c">${esc(D.person.contact.join(' | '))}</div>`;
-h += `<h2>Summary</h2><p>${esc(V.about)}</p><p><b>Impact:</b> ${esc(impact)}</p>`;
+h += `<h2>Summary</h2><p>${esc(V.about)}</p><p class="imp"><b>Impact:</b> ${esc(impact)}</p>`;
 h += `<h2>Education</h2>` + D.education.map(e => `<div class="row"><span><b>${esc(e[0])}</b>, ${esc(e[1])}</span><span class="d">${esc(e[2])}</span></div>`).join('');
 h += `<h2>Experience</h2>`;
 for (const j of D.jobs) {
@@ -19,7 +19,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 h1{font-size:25px;margin:0 0 2px}.t{font-weight:700;font-size:10.4px;margin-bottom:2px}.c{color:#4a5670;margin-bottom:4px}
 h2{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;margin:7px 0 3px;padding-bottom:2px;border-bottom:1.5px solid #e8b031}
 p{margin:0 0 2px}.row,.co{display:flex;justify-content:space-between;gap:12px;margin:5px 0 1px}.co{background:#fdf4dc;border-top:1.5px solid #1d2a44;padding:3px 6px}
-.d{font-weight:700;white-space:nowrap}.m{font-style:italic;color:#4a5670;margin:0 0 2px 6px}ul{margin:0;padding-left:13px}li{margin:0}
+.d{font-weight:700;white-space:nowrap}.m{font-style:italic;color:#4a5670;margin:0 0 2px 6px}ul{margin:0;padding-left:13px}.imp{margin-top:5px;padding-left:6px;border-left:3px solid #e8b031}li{margin:0}
 </style></head><body>${h}</body></html>`;
 (async () => { const b = await chromium.launch(); const p = await b.newPage();
   const f = outPdf.replace(/\.pdf$/, '.html'); fs.writeFileSync(f, html); await p.goto('file://' + path.resolve(f)); await p.waitForTimeout(200);
